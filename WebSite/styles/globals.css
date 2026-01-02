@@ -1,0 +1,46 @@
+/* Global mobile responsive styles */
+
+/* Make tables horizontally scrollable on mobile */
+table {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  /* Reduce table font size on mobile */
+  table {
+    font-size: 0.85rem;
+  }
+  
+  /* Allow table cells to wrap */
+  table td, table th {
+    white-space: normal;
+    word-wrap: break-word;
+  }
+  
+  /* Code blocks horizontal scroll */
+  pre {
+    overflow-x: auto;
+    max-width: 100vw;
+  }
+  
+  /* Reduce code font size slightly */
+  code {
+    font-size: 0.8rem;
+  }
+  
+  /* Ensure blockquotes don't overflow */
+  blockquote {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 1rem;
+  }
+}
+
+/* Ensure images are responsive */
+img {
+  max-width: 100%;
+  height: auto;
+}
