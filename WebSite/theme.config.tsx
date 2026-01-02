@@ -8,7 +8,7 @@ const config: DocsThemeConfig = {
     },
     docsRepositoryBase: 'https://github.com/NuriOkumus/DataScienceFinal/tree/main/WebSite',
     footer: {
-        text: 'Data Science Exam Prep - 2026',
+        text: '☕ Built with Nextra & Coffee | Sınavdan kaçarken yapıldı © 2026',
     },
     useNextSeoProps() {
         return {
