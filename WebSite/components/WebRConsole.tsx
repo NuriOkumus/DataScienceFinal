@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { WebR } from '@r-wasm/webr';
 
-const webR = new WebR();
+const webR = new WebR() as any;
 let initPromise: Promise<void> | null = null;
 
 interface WebRConsoleProps {
@@ -25,10 +25,16 @@ export default function WebRConsole({ initialCode = '' }: WebRConsoleProps) {
                             serviceWorkerUrl: window.location.origin + '/webr-serviceworker.js',
                             workerUrl: window.location.origin + '/webr-worker.js'
                         });
-                        console.log('WebR Initialized. Installing packages...');
-                        // Pre-install commonly used packages for this project
-                        await webR.installPackages(['MASS', 'mice']);
-                        console.log('Packages installed.');
+                        console.log('WebR Initialized. Installing MASS...');
+                        await webR.evalR("webr::install('MASS', repos = 'https://repo.r-wasm.org/')");
+
+                        console.log('Installing glmnet (required by mice)...');
+                        await webR.evalR("webr::install('glmnet', repos = 'https://repo.r-wasm.org/')");
+
+                        console.log('Installing mice...');
+                        await webR.evalR("webr::install('mice', repos = 'https://repo.r-wasm.org/')");
+
+                        console.log('All packages installed successfully.');
                     })();
                 }
 

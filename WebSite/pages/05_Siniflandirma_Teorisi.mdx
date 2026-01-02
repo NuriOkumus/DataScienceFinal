@@ -1,8 +1,3 @@
-import dynamic from 'next/dynamic'
-
-{/* Dynamic import is needed for client-side only components in Next.js */}
-export const WebRConsole = dynamic(() => import('../components/WebRConsole'), { ssr: false })
-
 # 05. Sınıflandırma (Classification) Teorisi
 
 Hedefimiz bir sayı tahmin etmek değil, bir **ETİKET** yapıştırmaktır: (Hasta/Sağlıklı, Evet/Hayır).
@@ -20,50 +15,94 @@ Bu işte iki temel yöntem kullanırız:
 
 ---
 
-## 3. Confusion Matrix (Karışıklık Matrisi) - SINAVIN KALBİ ❤️
+## 3. Cross Validation (Çapraz Doğrulama) ⭐
+
+Modeli eğitirken aynı veriyi hem eğitim hem test için kullanırsak **overfitting** (ezberleme) riski oluşur. Bunu önlemek için **Cross Validation** kullanırız.
+
+### 10-Fold CV Nasıl Çalışır?
+1. Veriyi **10 eşit parçaya** böl
+2. Her seferinde **1 parçayı test**, **9 parçayı eğitim** için kullan
+3. Bu işlemi 10 kez tekrarla (her parça 1 kez test olur)
+4. 10 sonucun **ortalamasını** al
+
+### 5 Replicate Ne Demek?
+Tüm bu 10-fold işlemini **5 kez farklı rastgele bölünmelerle** tekrarla. Toplamda 50 model kurulur!
+
+```r
+# Cross Validation Objesi Oluşturma
+library(caret)
+
+ctrl <- trainControl(
+    method = "repeatedcv",  # Tekrarlı CV
+    number = 10,            # 10-Fold
+    repeats = 5             # 5 Replicate
+)
+
+# Model Eğitimi (preProcess ile ölçekleme!)
+model <- train(
+    type ~ ., 
+    data = Pima.tr, 
+    method = "glm",         # veya "rf" Random Forest için
+    preProcess = c("center", "scale"),
+    trControl = ctrl
+)
+```
+
+---
+
+## 4. Confusion Matrix (Karışıklık Matrisi) - SINAVIN KALBİ ❤️
 
 Model tahminlerini yaptıktan sonra bir tablo oluştururuz:
 
 | | Tahmin: Hasta (Pos) | Tahmin: Sağlam (Neg) |
 |---|---|---|
-| **Gerçek: Hasta** | **True Positive (TP)** <br> *(Doğru Bildik!)* | **False Negative (FN)** <br> *(Kaçırdık!)* |
-| **Gerçek: Sağlam** | **False Positive (FP)** <br> *(Yanlış Alarm!)* | **True Negative (TN)** <br> *(Doğru Bildik!)* |
+| **Gerçek: Hasta** | **TP** (True Positive) | **FN** (False Negative) |
+| **Gerçek: Sağlam** | **FP** (False Positive) | **TN** (True Negative) |
 
-### Metrikler (Ezberle!)
-1.  **Accuracy (Doğruluk):** Toplamda ne kadarını bildik?
-    *   `(TP + TN) / Toplam`
-2.  **Sensitivity (Duyarlılık - Recall):** Hastaların yüzde kaçını yakaladık? (Doktorlar için en önemlisi!)
-    *   `TP / (TP + FN)`
-3.  **Specificity (Özgüllük):** Sağlamların yüzde kaçına sağlam dedik?
-    *   `TN / (TN + FP)`
+### Metrik Formülleri (EZBERLE!)
 
-<WebRConsole initialCode={`# UYARI: Caret paketi çok büyük olduğu için 
-# tarayıcıda yüklenmesi uzun sürebilir ve dondurabilir.
-# Bu örnek teorik amaçlıdır, WebR'da 'glm' (Lojistik) kullanabiliriz.
+| Metrik | Formül | Anlamı |
+|--------|--------|--------|
+| **Accuracy** | `(TP + TN) / (TP+TN+FP+FN)` | Toplamda ne kadarını bildik? |
+| **Sensitivity** (Recall) | `TP / (TP + FN)` | Hastaların kaçını yakaladık? |
+| **Specificity** | `TN / (TN + FP)` | Sağlamların kaçına sağlam dedik? |
+| **Precision** | `TP / (TP + FP)` | "Hasta" dediklerimizin kaçı gerçekten hasta? |
 
+> **Sınav İpucu:** Sensitivity doktorlar için kritik! Hastayı kaçırmak (FN) çok tehlikeli.
+
+---
+
+## 5. R Kodu: Tam Akış
+
+```r
 library(MASS)
+library(caret)
 data(Pima.tr)
+data(Pima.te)
 
-# Basit bir Lojistik Regresyon
-# type ~ . (Type'ı diğer her şeye göre tahmin et)
-# family = binomial (Evet/Hayır demek)
-model_glm <- glm(type ~ ., data = Pima.tr, family = binomial)
+# 1. Cross Validation Ayarı
+ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
 
-summary(model_glm)
+# 2. Logistic Regression Modeli
+set.seed(123)
+model_glm <- train(type ~ ., data = Pima.tr, method = "glm",
+                   preProcess = c("center", "scale"), trControl = ctrl)
 
-# Tahmin Yapalım (Olasılıkları verir)
-probs <- predict(model_glm, type = "response")
-head(probs)
+# 3. Random Forest Modeli
+set.seed(123)
+model_rf <- train(type ~ ., data = Pima.tr, method = "rf",
+                  preProcess = c("center", "scale"), trControl = ctrl)
 
-# %50'den büyükse Yes, değilse No diyelim
-preds <- ifelse(probs > 0.5, "Yes", "No")
+# 4. Test Seti Üzerinde Confusion Matrix
+pred_glm <- predict(model_glm, Pima.te)
+confusionMatrix(pred_glm, Pima.te$type, positive = "Yes")
+```
 
-# Basit bir Confusion Matrix
-table(Predicted = preds, Actual = Pima.tr$type)
-`} />
+---
 
-<WebRConsole initialCode={`# Yeni Hasta Tahmini (Manuel)
-# İki yeni kişi geldi:
+## 6. Yeni Hasta Tahmini
+
+```r
 yeni_hastalar <- data.frame(
     npreg = c(4, 1), 
     glu = c(148, 85), 
@@ -74,9 +113,7 @@ yeni_hastalar <- data.frame(
     age = c(40, 17) 
 )
 
-# Tahmin et
-tahmin_olasilik <- predict(model_glm, newdata = yeni_hastalar, type = "response")
-sonuc <- ifelse(tahmin_olasilik > 0.5, "Zorunlu Diyabet", "Sağlam")
+predict(model_rf, newdata = yeni_hastalar)
+# Beklenen: Patient 1 = Yes, Patient 2 = No
+```
 
-print(data.frame(Olasilik = tahmin_olasilik, Karar = sonuc))
-`} />

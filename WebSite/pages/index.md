@@ -1,26 +1,26 @@
-# 2 Günlük Veri Bilimi Final Çalışma Planı
+# Veri Bilimi Final Çalışma Rehberi
 
-## 🗓️ 1. GÜN: Temeller ve Kritik Konular (Banko Sorular)
+## 📚 Bölüm 1: Temeller ve Kritik Konular
 
-### 🌅 Sabah (09:00 - 12:00): Preprocessing & Missing Data (Mice)
+### 1.1 Preprocessing & Missing Data (Mice)
 *   **Odak:** `mice` paketi, `pool()` fonksiyonu, `m=5` parametresi.
 *   **Kavramlar:** MCAR (Missing Completely at Random), MAR (Missing at Random), MNAR (Missing Not at Random) farkları.
 *   **Detay:** PMM (Predictive Mean Matching) çalışma mantığı.
 
-### ☀️ Öğleden Sonra (13:00 - 16:00): PCA (Dimension Reduction)
+### 1.2 PCA (Dimension Reduction)
 *   **Odak:** `scale=TRUE` argümanının istatistiksel gerekliliği.
 *   **Analiz:** Scree Plot ile "Elbow Method" kullanımı ve varyans açıklama.
 *   **Yorumlama:** Principal Component Loading değerlerine göre değişkenlerin ilişkisi.
 
-### 🌙 Akşam (19:00 - 21:00): Veri Görselleştirme
+### 1.3 Veri Görselleştirme
 *   **Odak:** `ggplot2` ve `dplyr` kütüphaneleri.
 *   **Analiz:** Simetrik dağılımların keşfi ve Feature Plot çizimi.
 
 ---
 
-## 🗓️ 2. GÜN: Modelleme ve Karar Verme
+## 📊 Bölüm 2: Modelleme ve Karar Verme
 
-### 🌅 Sabah (09:00 - 12:00): Regresyon & Varsayımlar
+### 2.1 Regresyon & Varsayımlar
 *   **Odak:** Lineer Regresyon ve Backward Stepwise Regression (`step()` fonksiyonu).
 *   **Kontrol:**
     *   **Homoscedasticity:** Residuals vs Fitted plot yorumlama.
@@ -28,10 +28,12 @@
     *   **Multicollinearity:** Neden sorundur?
 *   **Metrik:** Adjusted R-squared vs Multiple R-squared.
 
-### ☀️ Öğleden Sonra (13:00 - 16:00): Sınıflandırma (Classification)
+### 2.2 Sınıflandırma (Classification)
 *   **Odak:** Logistic Regression vs Random Forest.
 *   **Araç:** `caret` paketi ile 10-fold Cross Validation.
 *   **Metrikler:** Accuracy, Sensitivity, Specificity hesaplama ve Confusion Matrix.
 
-### 🌙 Akşam (19:00 - ...): Final Provası
-*   Hocanın paylaştığı "Test Yourself Final" sorularını baştan sona çözme ve cevapları kontrol etme.
+---
+
+## ✅ Final Provası
+Hocanın paylaştığı "Test Yourself Final" sorularını baştan sona çözme ve cevapları kontrol etme.

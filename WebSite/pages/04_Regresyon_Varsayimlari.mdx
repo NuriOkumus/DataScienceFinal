@@ -1,15 +1,11 @@
-import dynamic from 'next/dynamic'
-
-{/* Dynamic import is needed for client-side only components in Next.js */}
-export const WebRConsole = dynamic(() => import('../components/WebRConsole'), { ssr: false })
-
 # 04. Regresyon Varsayımları (Diagnostics) - En Kritik Konu! 🚨
 
 Bir Lineer Regresyon modeli kurduk (`lm`). Peki bu model güvenilir mi? Bunu anlamak için modele **"sağlık kontrolü" (Diagnostics)** yapmalıyız.
 
 Sınavda hoca sana **4'lü bir grafik (Plot)** verir ve yorumlamanı ister. En önemli ikisi şunlardır:
 
-<WebRConsole initialCode={`# 1. Modeli Kurma
+```r
+# 1. Modeli Kurma
 library(MASS)
 data(Pima.tr)
 
@@ -18,7 +14,7 @@ data(Pima.tr)
 model_full <- lm(bmi ~ . - type, data = Pima.tr)
 
 summary(model_full)
-`} />
+```
 
 ---
 
@@ -48,7 +44,8 @@ Bu grafik bize şunu söyler: **"Hatalar Normal Dağılıyor mu?"**
     *   S harfi çiziyorsa.
     *   Buna "Non-Normality" denir. ❌
 
-<WebRConsole initialCode={`# 2. Diagnostics Plots (Sağlık Kontrolü)
+```r
+# 2. Diagnostics Plots (Sağlık Kontrolü)
 # Ekranı 2x2 bölelim
 par(mfrow = c(2, 2))
 
@@ -57,29 +54,89 @@ plot(model_full)
 
 # İşimiz bitince ekranı düzeltelim
 par(mfrow = c(1, 1))
-`} />
+```
 
 ---
 
 ## 3. Multicollinearity (Çoklu Bağlantı Problemi)
 
-Bu grafik değil, bir hesaplamadır (VIF testi).
-*   **Nedir?** Modeldeki iki değişkenin birbirinin aynısı (veya çok benzeri) olmasıdır.
-*   **Örnek:** Modele hem `bmi` (Kilo indeks) hem de `skin` (Yağ kalınlığı) koymak. İkisi de "şişmanlığı" ölçer. Modelin kafası karışır.
-*   **Belirtisi:** Standart Hatalar (Std. Error) aşırı büyür.
-*   **Çözüm:** Birini modelden atmak!
+**Nedir?** Modeldeki iki değişkenin birbirine çok benzemesidir.
+
+**Örnek:** Modele hem `bmi` hem de `skin` koymak. İkisi de "şişmanlığı" ölçer. Modelin kafası karışır.
+
+**Belirtileri:**
+- Standart Hatalar (Std. Error) aşırı büyür
+- Katsayılar anlamsız çıkar (p-value > 0.05)
+- Katsayı işaretleri beklenenin tersi olabilir
+
+### VIF (Variance Inflation Factor) Testi
+
+VIF değeri multicollinearity'yi ölçer:
+- **VIF = 1:** Korelasyon yok (ideal)
+- **VIF > 5:** Dikkat! Potansiyel sorun
+- **VIF > 10:** Ciddi sorun! Değişkeni çıkar
+
+```r
+# VIF Hesaplama
+library(car)
+vif(model_full)
+
+# Eğer VIF > 5 olan varsa, o değişkeni modelden çıkar
+```
+
+**Çözüm:** VIF değeri yüksek olan değişkenlerden birini modelden at!
 
 ---
 
 ## 4. R-Kare (Multiple vs Adjusted)
-*   **Multiple R-squared:** Modele her yeni değişken eklediğinde (çöp bile olsa) ARTAR. Yanıltıcıdır.
-*   **Adjusted R-squared:** Cezalandırıcıdır. Eğer eklediğin değişken işe yaramıyorsa, bu puan DÜŞER.
-*   **Kural:** İki modeli kıyaslarken **her zaman Adjusted R-squared**'e bakılır.
 
-<WebRConsole initialCode={`# 3. Stepwise Regression (Geriye Doğru Eleme)
-# Gereksiz değişkenleri otomatik at
+| Metrik | Özellik | Ne Zaman Kullan? |
+|--------|---------|------------------|
+| **Multiple R²** | Her değişken eklenince ARTAR (çöp bile olsa) | KULLANMA! |
+| **Adjusted R²** | Gereksiz değişken eklenince DÜŞER | HER ZAMAN BUNA BAK! |
+
+> **Kural:** İki modeli kıyaslarken **her zaman Adjusted R-squared**'e bakılır.
+
+---
+
+## 5. Stepwise Regression (Otomatik Model Seçimi)
+
+`step()` fonksiyonu gereksiz değişkenleri otomatik atar.
+
+```r
+# Backward Elimination (Geriye Doğru Eleme)
 model_reduced <- step(model_full, direction = "backward")
 
-# Bakalım kimler elendi, kimler kaldı?
+# Sonucu gör
 summary(model_reduced)
-`} />
+```
+
+### Stepwise Çalışma Mantığı
+1. Tüm değişkenlerle başla (Full Model)
+2. Her adımda AIC değerini hesapla
+3. AIC'yi en çok düşüren değişkeni **çıkar**
+4. AIC düşmeyene kadar tekrarla
+
+### ⚠️ Stepwise Eleştirisi (Sınav Sorusu!)
+
+Stepwise "greedy" (açgözlü) bir algoritmadır. Riskleri:
+- Her adımda lokal olarak en iyi kararı verir, global optimumu kaçırabilir
+- p-value'lar inflate olabilir (çok test yapılıyor)
+- Sonuçlar sample'a çok bağımlı, farklı veriyle farklı model çıkar
+- **Klinik/teorik bilgiyi görmezden gelir**
+
+> **Sınav Cevabı:** "Stepwise ignores domain knowledge. A clinically important variable might be removed just because it's not statistically significant in this particular sample."
+
+---
+
+## 6. Full vs Reduced Model Karşılaştırma
+
+| Özellik | Full Model | Reduced Model |
+|---------|------------|---------------|
+| Değişken Sayısı | Fazla | Az |
+| Multiple R² | Daha yüksek | Daha düşük |
+| Adjusted R² | Belki düşük | Muhtemelen daha yüksek |
+| Yorumlama | Zor | Kolay |
+| Overfitting Riski | Yüksek | Düşük |
+
+> **Parsimony Principle:** Aynı başarıyı veren iki modelden **daha basit olanı** tercih et!

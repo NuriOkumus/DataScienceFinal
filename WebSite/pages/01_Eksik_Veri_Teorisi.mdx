@@ -1,8 +1,3 @@
-import dynamic from 'next/dynamic'
-
-{/* Dynamic import is needed for client-side only components in Next.js */}
-export const WebRConsole = dynamic(() => import('../components/WebRConsole'), { ssr: false })
-
 # 01. Eksik Veri (Missing Data) ve MICE
 
 ## 1. Neden Veri Eksik? (Missing Data Mechanisms)
@@ -28,21 +23,6 @@ Veri setindeki boşlukların (NA) sebebi, `mice` paketinin başarısını doğru
 *   **Örnek:** Çok kilolu insanlar, tartılmak istemedikleri için kilo verisi eksiktir. Kilo verisi eksik çünkü kilonun kendisi yüksek.
 *   **Sorun:** `mice` bu durumu doğrudan düzeltemez çünkü verinin neden eksik olduğunu "göremez".
 
-<WebRConsole initialCode={`# 1. Hazırlık ve Eksik Veri Yaratma (Senaryo)
-library(MASS)
-library(mice)
-data(Pima.tr)
-
-# Eğitim amaçlı rastgele NA (kayıp) değerler oluşturalım
-set.seed(123)
-Pima_miss <- Pima.tr
-# BMI değişkeninde 20 rastgele kişiyi "bilinmiyor" (NA) yap
-Pima_miss[sample(1:nrow(Pima_miss), 20), "bmi"] <- NA 
-
-# Eksik verinin yapısını gör (Pattern)
-md.pattern(Pima_miss)
-`} />
-
 ---
 
 ## 2. MICE ve PMM (Predictive Mean Matching)
@@ -58,39 +38,62 @@ PMM, eksik veriyi doldurmak için **gerçek** bir değer kopyalar. Matematiksel 
 4.  **Kopyala:** O benzer kişinin (donörün) **gerçek** BMI değerini (örn: 28.1) alıp eksik yere yazar.
 
 ### Neden PMM Harika?
-*   **Gerçekçi Değerler:** Asla 2.5 çocuk veya -5 tansiyon gibi imkansız sayılar üretmez. Çünkü veri setinden gerçek bir sayı kopyalar.
+*   **Gerçekçi Değerler:** Asla 2.5 çocuk veya -5 tansiyon gibi imkansız sayılar üretmez.
 *   **Dağılımı Korur:** Verinin orijinal şeklini (varyansını) bozmaz.
-
-<WebRConsole initialCode={`# 2. MICE ile Doldurma (Imputation)
-# m=5 : 5 farklı doldurulmuş veri seti oluştur.
-# method='pmm' : Predictive Mean Matching
-# maxit=5 : 5 iterasyon (Hız için düşük tuttuk)
-
-imputed_data <- mice(Pima_miss, m = 5, method = 'pmm', maxit = 5, seed = 500)
-
-# Özeti görelim
-summary(imputed_data)
-
-# İlk doldurulmuş seti çekelim ve kontrol edelim
-completed_data_1 <- complete(imputed_data, action = 1)
-sum(is.na(completed_data_1)) # 0 olmalı (yani hiç NA kalmamalı)
-`} />
 
 ---
 
-### Sınav İpucu: mice(m=5) Parametresi
-*   **m=5 ne demek?** `mice` fonksiyonu veriyi 5 kere farklı şekillerde doldurur ve 5 farklı veri seti oluşturur.
-*   **Neden?** Tek bir doldurma işlemi hataya açık olabilir. 5 farklı tahmin yaparak belirsizliği (uncertainty) modele katmış oluruz.
-*   **Sonuç:** `pool()` fonksiyonu bu 5 farklı havuzun sonuçlarını birleştirir.
+## 3. MICE Kodları
 
-<WebRConsole initialCode={`# 3. Modelleme ve Pooling (Analiz Kısmı)
-# Soru: "BMI değerini, yaş ve şeker ile tahmin edebilir miyiz?"
-# NOT: 'with' fonksiyonu her 5 veri seti için ayrı ayrı model kurar.
+### Adım 1: Veri Hazırlama ve Eksik Veri Yapısı
 
-fit_mice <- with(data = imputed_data, exp = lm(bmi ~ age + glu + npreg))
+```r
+library(MASS)
+library(mice)
+data(Pima.tr)
 
-# 'pool' fonksiyonu sonuçları birleştirir (Ortalamasını alır)
-pooled_results <- pool(fit_mice)
+# Rastgele NA oluştur
+set.seed(123)
+Pima_miss <- Pima.tr
+Pima_miss[sample(1:nrow(Pima_miss), 20), "bmi"] <- NA 
 
-summary(pooled_results)
-`} />
+# Eksik verinin yapısını gör
+md.pattern(Pima_miss)
+```
+
+### Adım 2: MICE ile Doldurma (Imputation)
+
+```r
+# m=5 : 5 farklı doldurulmuş veri seti
+# method='pmm' : Predictive Mean Matching
+# maxit=5 : 5 iterasyon
+
+imputed_data <- mice(Pima_miss, m = 5, method = 'pmm', maxit = 5, seed = 500)
+
+# İlk seti çek ve kontrol et
+completed_data <- complete(imputed_data, action = 1)
+sum(is.na(completed_data)) # 0 olmalı
+```
+
+### Adım 3: Modelleme ve Pooling
+
+```r
+# Her 5 veri seti için model kur
+fit <- with(data = imputed_data, exp = lm(bmi ~ age + glu + npreg))
+
+# Sonuçları birleştir (Rubin's Rules)
+pooled <- pool(fit)
+summary(pooled)
+```
+
+---
+
+## 4. Sınav İpuçları
+
+| Parametre | Açıklama |
+|-----------|----------|
+| `m=5` | 5 farklı doldurulmuş veri seti oluşturur |
+| `method='pmm'` | Predictive Mean Matching (varsayılan) |
+| `maxit=5` | 5 iterasyon |
+| `complete(data, 1)` | İlk doldurulmuş seti çeker |
+| `pool()` | Rubin's Rules ile sonuçları birleştirir |
