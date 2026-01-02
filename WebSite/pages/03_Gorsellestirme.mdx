@@ -1,0 +1,66 @@
+import dynamic from 'next/dynamic'
+ 
+{/* Dynamic import is needed for client-side only components in Next.js */}
+export const WebRConsole = dynamic(() => import('../components/WebRConsole'), { ssr: false })
+
+# 03. Veri Görselleştirme (Data Visualization) Teorisi
+
+Sınavda görselleştirme soruları genellikle iki amaca hizmet eder:
+1.  **Dağılımı Anlamak:** "Hangi değişkenler simetrik (normal) dağılıyor?"
+2.  **Sınıflandırma Gücünü Görmek:** "Hangi değişken diyabeti (Yes/No) en iyi ayırt ediyor?"
+
+## 1. Histogram (Dağılım Kontrolü)
+Histogram, bir veri sütununun (örn: Yaş) nasıl dağıldığını gösterir.
+*   **Simetrik (Çan Eğrisi):** Ortada tepe yapan, sağı ve solu birbirine benzeyen grafik. İstatistikte en sevdiğimiz (Normal Dağılım) tiptir.
+*   **Çarpık (Skewed):** Kuyruğu sağa (Right Skewed) veya sola uzayan grafikler.
+    *   Örn: `Insulin` genelde sağa çarpıktır (çoğu düşük, az sayıda çok yüksek değer).
+
+<WebRConsole initialCode={`# 1. Histogram: Simetrik Dağılım Dedektifi
+library(MASS)
+data(Pima.tr)
+
+# Ekranı bölmek için (2 satır, 4 sütun)
+par(mfrow = c(2, 4))
+
+# Döngü ile hepsini çizelim
+for (i in 1:7) {
+    hist(Pima.tr[, i],
+        main = names(Pima.tr)[i],
+        col = "lightblue"
+    )
+}
+par(mfrow = c(1, 1))
+`} />
+
+## 2. Feature Plot (Caret Paketi)
+`caret` paketindeki `featurePlot`, birden fazla değişkenin "Type" (Yes/No) ile ilişkisini tek seferde gösterir.
+
+*   **Box Plot (Kutu Grafiği) Olarak:**
+    *   Eğer "Yes" kutusu ile "No" kutusu birbirinden **çok ayrı** duruyorsa (biri yukarıda biri aşağıda), o değişken **iyi bir ayırt edicidir**.
+    *   Eğer kutular üst üste biniyorsa, o değişkenin sınıflandırma gücü zayıftır.
+
+<WebRConsole initialCode={`# 2. Feature Plot: En İyi Ayırt Ediciyi Bulmak
+# NOT: caret paketi büyük olduğu için yüklenmesi zaman alabilir.
+# Beklemek istemezseniz aşağıdaki yorumları kaldırın.
+
+# library(caret)
+# library(MASS)
+# data(Pima.tr)
+
+# featurePlot(
+#    x = Pima.tr[, 1:7],
+#    y = Pima.tr$type,
+#    plot = "box",
+#    scales = list(y = list(relation = "free")),
+#    auto.key = list(columns = 2)
+# )
+print("Caret paketi çok büyük olduğu için tarayıcıda yavaşlatabilir.")
+print("Bu yüzden bu blok varsayılan olarak kapalıdır.")
+`} />
+
+## 3. Box Plot (Aykırı Değer Avcısı)
+Box Plot, verinin çeyreklerini (Quarter) gösterir.
+*   **Kutunun dışındaki noktalar:** "Outlier" (Aykırı Değer) olarak kabul edilir.
+*   Örn: Diastolik tansiyonu 120 olan biri aykırı değer olabilir.
+
+> **Sınav İpucu:** Hoca "Hangi değişken en iyi sınıflandırır?" diye sorarsa Feature Plot çizip kutuları en ayrık olana bakacağız. "Hangi değişken simetriktir?" derse Histogram çizip çan eğrisine en çok benzeyeni seçeceğiz.

@@ -1,0 +1,82 @@
+import dynamic from 'next/dynamic'
+
+{/* Dynamic import is needed for client-side only components in Next.js */}
+export const WebRConsole = dynamic(() => import('../components/WebRConsole'), { ssr: false })
+
+# 05. Sınıflandırma (Classification) Teorisi
+
+Hedefimiz bir sayı tahmin etmek değil, bir **ETİKET** yapıştırmaktır: (Hasta/Sağlıklı, Evet/Hayır).
+Bu işte iki temel yöntem kullanırız:
+
+## 1. Logistic Regression (glm)
+*   **Mantık:** Lineer regresyonun `S` çizerek 0 ile 1 arasına sıkıştırılmış halidir (Sigmoid fonksiyonu).
+*   **Avantajı:** Yorumlaması kolaydır. Hangi değişkenin olasılığı nasıl artırdığını (Odds Ratio) net söyler.
+*   **Dezavantajı:** Veri çok karmaşıksa (Linear değilse) başarısız olabilir.
+
+## 2. Random Forest (rf)
+*   **Mantık:** "Akıl akıldan üstündür." Tek bir ağaç yerine yüzlerce Karar Ağacı (Decision Tree) kurar. Hepsi oylama yapar. Çoğunluk ne derse o olur.
+*   **Avantajı:** Genelde en yüksek başarıyı (Accuracy) bu verir.
+*   **Dezavantajı:** "Black Box"tır. Neden o kararı verdiğini anlamak zordur.
+
+---
+
+## 3. Confusion Matrix (Karışıklık Matrisi) - SINAVIN KALBİ ❤️
+
+Model tahminlerini yaptıktan sonra bir tablo oluştururuz:
+
+| | Tahmin: Hasta (Pos) | Tahmin: Sağlam (Neg) |
+|---|---|---|
+| **Gerçek: Hasta** | **True Positive (TP)** <br> *(Doğru Bildik!)* | **False Negative (FN)** <br> *(Kaçırdık!)* |
+| **Gerçek: Sağlam** | **False Positive (FP)** <br> *(Yanlış Alarm!)* | **True Negative (TN)** <br> *(Doğru Bildik!)* |
+
+### Metrikler (Ezberle!)
+1.  **Accuracy (Doğruluk):** Toplamda ne kadarını bildik?
+    *   `(TP + TN) / Toplam`
+2.  **Sensitivity (Duyarlılık - Recall):** Hastaların yüzde kaçını yakaladık? (Doktorlar için en önemlisi!)
+    *   `TP / (TP + FN)`
+3.  **Specificity (Özgüllük):** Sağlamların yüzde kaçına sağlam dedik?
+    *   `TN / (TN + FP)`
+
+<WebRConsole initialCode={`# UYARI: Caret paketi çok büyük olduğu için 
+# tarayıcıda yüklenmesi uzun sürebilir ve dondurabilir.
+# Bu örnek teorik amaçlıdır, WebR'da 'glm' (Lojistik) kullanabiliriz.
+
+library(MASS)
+data(Pima.tr)
+
+# Basit bir Lojistik Regresyon
+# type ~ . (Type'ı diğer her şeye göre tahmin et)
+# family = binomial (Evet/Hayır demek)
+model_glm <- glm(type ~ ., data = Pima.tr, family = binomial)
+
+summary(model_glm)
+
+# Tahmin Yapalım (Olasılıkları verir)
+probs <- predict(model_glm, type = "response")
+head(probs)
+
+# %50'den büyükse Yes, değilse No diyelim
+preds <- ifelse(probs > 0.5, "Yes", "No")
+
+# Basit bir Confusion Matrix
+table(Predicted = preds, Actual = Pima.tr$type)
+`} />
+
+<WebRConsole initialCode={`# Yeni Hasta Tahmini (Manuel)
+# İki yeni kişi geldi:
+yeni_hastalar <- data.frame(
+    npreg = c(4, 1), 
+    glu = c(148, 85), 
+    bp = c(72, 66), 
+    skin = c(35, 29), 
+    bmi = c(24.6, 26.6), 
+    ped = c(0.627, 0.351), 
+    age = c(40, 17) 
+)
+
+# Tahmin et
+tahmin_olasilik <- predict(model_glm, newdata = yeni_hastalar, type = "response")
+sonuc <- ifelse(tahmin_olasilik > 0.5, "Zorunlu Diyabet", "Sağlam")
+
+print(data.frame(Olasilik = tahmin_olasilik, Karar = sonuc))
+`} />
