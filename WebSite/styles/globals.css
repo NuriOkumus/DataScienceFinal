@@ -6,41 +6,56 @@ table {
   overflow-x: auto;
   white-space: nowrap;
   max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-logo {
+  font-size: 1.25rem;
 }
 
 @media (max-width: 768px) {
+  .responsive-logo {
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    display: inline-block;
+  }
+
   /* Reduce table font size on mobile */
   table {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
   }
   
-  /* Allow table cells to wrap */
+  /* Allow table cells to wrap if they are long */
   table td, table th {
     white-space: normal;
-    word-wrap: break-word;
+    min-width: 100px;
+    padding: 0.5rem !important;
   }
   
   /* Code blocks horizontal scroll */
   pre {
-    overflow-x: auto;
-    max-width: 100vw;
+    padding: 1rem !important;
+    border-radius: 8px !important;
+    font-size: 0.85rem !important;
   }
   
-  /* Reduce code font size slightly */
-  code {
-    font-size: 0.8rem;
+  /* Simplify sidebar padding on mobile */
+  .nextra-sidebar-container {
+    padding-top: 1rem !important;
   }
-  
-  /* Ensure blockquotes don't overflow */
-  blockquote {
-    margin-left: 0;
-    margin-right: 0;
-    padding-left: 1rem;
-  }
+
+  /* Typography adjustments */
+  h1 { font-size: 1.75rem !important; }
+  h2 { font-size: 1.5rem !important; }
+  h3 { font-size: 1.25rem !important; }
 }
 
 /* Ensure images are responsive */
 img {
   max-width: 100%;
   height: auto;
+  border-radius: 8px;
 }
