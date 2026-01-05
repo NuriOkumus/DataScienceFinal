@@ -1,198 +1,135 @@
-# Test Yourself Final - Çözümler ve Açıklamalar
+# Test Yourself Final - Çözümler ve Açıklamalar (Güncel)
 
-Bu dosya, `Test Yourself Final` sınavındaki tüm soruların adım adım çözümlerini, gerekli R kodlarını ve sınavda yazılması gereken yorumları içerir.
+Bu dosya, `test_yourself_questions.md` sınavındaki tüm soruların en güncel, en basit R kodlarını ve sınavda yazılması gereken Türkçe yorumları içerir.
 
 ---
 
-## SORU 1: Missing Values (Eksik Veri Kontrolü)
-**Soru:** "Check whether the datasets includes any missing values. 0’s are missing for the variables except for npreg and type..."
-
-**Çözüm:**
-Pima veri setinde "0" değeri teknik olarak mümkün olmayan yerlerde (Örn: Şeker=0, Tansiyon=0) Kayıp Veri (NA) olarak kabul edilmelidir.
+## 1. Missing Values (Eksik Veri Kontrolü)
+**Soru:** Değişkenlerdeki eksik verileri kontrol edin. `npreg` ve `type` dışında 0'lar eksik veri kabul edilir.
 
 **Kod:**
 ```r
 library(MASS)
-library(mice)
-data(Pima.tr)
+# NA kontrolü
+anyNA(Pima.tr)
 
-# 1. 0 olan değerleri NA yapalım (Eksik Veri olarak işaretle)
-Pima.tr$glu[Pima.tr$glu == 0] <- NA
-Pima.tr$bp[Pima.tr$bp == 0]   <- NA
-Pima.tr$skin[Pima.tr$skin == 0] <- NA
-Pima.tr$bmi[Pima.tr$bmi == 0]   <- NA
-
-# 2. Kontrol Et
-summary(Pima.tr)  # Artık NA sayılarını görebiliriz
-md.pattern(Pima.tr) # Görsel olarak eksik desenini gör
+# 0 kontrolü (0'ları NA yaparak sayalım)
+tr_temp <- Pima.tr
+tr_temp[, 2:7][tr_temp[, 2:7] == 0] <- NA
+sum(is.na(tr_temp))
 ```
-**Yorum:** "Variables like glucose, bp, skin, and bmi cannot physically be 0. These zeros represent missing data."
 
 ---
 
-## SORU 2: Symmetric Distribution (Simetrik Dağılım)
-**Soru:** "Explore the attributes and write down the ones that have symmetric distribution..."
-
-**Çözüm:**
-Histogram çizerek dağılımın şekline (Çan eğrisi mi?) bakarız.
+## 2. Symmetric Distribution (Simetrik Dağılım)
+**Soru:** Hangi öznitelikler simetrik dağılıma sahiptir?
 
 **Kod:**
 ```r
-par(mfrow=c(2,4)) # Ekranı böl
-for(i in 1:7) hist(Pima.tr[,i], main=names(Pima.tr)[i])
+par(mfrow = c(3, 3))
+for(i in 1:7) hist(Pima.tr[, i], main = colnames(Pima.tr)[i], col = "skyblue")
 ```
-**Cevap:**
-*   **Simetrik Olanlar:** `glu` (Glikoz) ve `bp` (Tansiyon).
-*   **Simetrik Olmayanlar:** `age` (Sağa çarpık - Right Skewed).
+**Yorum:** `bmi`, `glu` ve `bp` nispeten simetrik dağılım gösterirken; `npreg` ve `age` sağa çarpıktır.
 
 ---
 
-## SORU 3: Feature Plot (Sınıflandırma Gücü)
-**Soru:** "Create a feature plot and evaluate the attributes that best classify the response..."
-
-**Çözüm:**
-`caret` paketi ile kutu grafikleri çizerek "Yes" ve "No" gruplarının ne kadar ayrıştığına bakarız.
+## 3. Feature Plot (Sınıflandırma Gücü)
+**Soru:** Hangi öznitelikler cevabı (type) en iyi sınıflandırır?
 
 **Kod:**
 ```r
 library(caret)
-featurePlot(x = Pima.tr[, 1:7], 
-            y = Pima.tr$type, 
-            plot = "box", 
-            scales = list(y = list(relation = "free")))
+featurePlot(x = Pima.tr[, 1:7], y = Pima.tr$type, plot = "box")
 ```
-**Yorum:**
-"We look for variables where the 'Yes' box and 'No' box are clearly separated."
-*   **En İyi:** `glu` (Şeker). Kutu ayrımı çok nettir.
-*   **En Kötü:** `bp` veya `skin`. Kutular üst üste biner.
+**Yorum:** `glu` ve `bmi` kutu grafiklerinde gruplar arasında en belirgin farkı gösteren, yani en iyi ayırt edici değişkenlerdir.
 
 ---
 
-## SORU 4, 5, 6: Modelleme ve Karşılaştırma
-**Soru:** "Train logistic regression and random forest... Accuracy, Sensitivity, Specificity..."
-
-**Çözüm:**
-`caret` paketi ile iki model kurup karşılaştıracağız.
+## 4, 5 & 6. Modelleme ve Değerlendirme
+**Soru:** 10-fold CV ile Lojistik Regresyon ve Random Forest modelleri kurup karşılaştırın.
 
 **Kod:**
 ```r
-# 10-Katlı Çapraz Doğrulama (Cross Validation)
 ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
 
-# Model 1: Logistic Regression
-set.seed(123)
-model_glm <- train(type ~ ., data = Pima.tr, method = "glm",
-                   preProcess = c("center", "scale"), trControl = ctrl)
+# Logistic Regression
+model_logit <- train(type ~ ., data = Pima.tr, method = "glm", family = "binomial",
+                     preProcess = c("center", "scale"), trControl = ctrl)
 
-# Model 2: Random Forest
-set.seed(123)
+# Random Forest
 model_rf <- train(type ~ ., data = Pima.tr, method = "rf",
                   preProcess = c("center", "scale"), trControl = ctrl)
 
-# Karşılaştır
-results <- resamples(list(Log = model_glm, RF = model_rf))
-summary(results)
+# Confusion Matrix (Pima.te üzerinde)
+pred_logit <- predict(model_logit, Pima.te)
+confusionMatrix(pred_logit, Pima.te$type, positive = "Yes")
 ```
-**Yorum:**
-"Random Forest usually provides higher Accuracy compared to Logistic Regression, but Logistic Regression is easier to interpret."
+**Yorum:** Sınavda Accuracy, Sensitivity ve Specificity değerlerini çıktılardan karşılaştırıp en yüksek doğruluğa sahip olanı seçtiğinizi belirtmelisiniz.
 
 ---
 
-## SORU 7: Tahmin (Yeni Hastalar)
-**Soru:** "Patient #1 (npreg=4, glu=148...)... Predict class."
-
-**Çözüm:**
-Yeni hastanın verilerini bir `data.frame` olarak girip `predict` fonksiyonunu kullanırız.
-
+## 7. Tahmin (Yeni Hastalar)
 **Kod:**
 ```r
-yeni_hastalar <- data.frame(
-  npreg = c(4, 1), 
-  glu   = c(148, 85),
-  bp    = c(72, 66),
-  skin  = c(35, 29),
-  bmi   = c(24.6, 26.6), 
-  ped   = c(0.627, 0.351), 
-  age   = c(40, 17)
+new_patients <- data.frame(
+  npreg = c(4, 1), glu = c(148, 85), bp = c(72, 66),
+  skin = c(35, 29), bmi = c(24.6, 26.6), ped = c(0.627, 0.351), age = c(40, 17)
 )
-
-# Tahmin Et (Random Forest ile)
-predict(model_rf, newdata = yeni_hastalar)
+predict(model_logit, new_patients)
 ```
-**Cevap:**
-*   **Patient #1:** `Yes` (Diyabetik)
-*   **Patient #2:** `No` (Sağlıklı)
 
 ---
 
-## SORU 8, 9, 10, 11, 12: PCA (Principal Component Analysis)
-
-**Kod (Soru 8 & 10):**
+## 8, 9 & 10. PCA (Temel Bileşenler Analizi)
+**Kod:**
 ```r
-# PCA Uygula (Scale=TRUE Şart!)
-pca_res <- prcomp(Pima.tr[,-8], scale = TRUE)
-
-# Scree Plot (Soru 10)
-screeplot(pca_res, type="lines")
-
-# Loadings (Soru 11 - Yorumlama)
-print(pca_res$rotation)
+pca_result <- prcomp(Pima.tr[, 1:7], scale = TRUE)
+summary(pca_result)
+plot(pca_result, type = "l") # Scree Plot
 ```
-
-**Soru 9 (Scale=TRUE):**
-*   **Cevap:** "We MUST use `scale=TRUE`. Otherwise, variables with large ranges (like Insulin) will dominate the PCA purely because of their units."
-
-**Soru 11 (PC1 Yorumu):**
-*   **Cevap:** "PC1 shows high loadings for Age, Glucose, and BMI. This suggests it represents general metabolic health/aging factor."
-
-**Soru 12 (Avantaj/Dezavantaj):**
-*   **Avantaj:** Multicollinearity sorunu yoktur.
-*   **Dezavantaj (Cost):** Klinik yorumlaması zordur. Doktor "PC1'in arttı" demez, "Şekerin arttı" der.
+**Soru 9 (Scale=TRUE):** Değişkenlerin birimleri farklı olduğu için (örn: yaş vs glikoz) ölçekleme yapılmazsa sayısal olarak büyük değerler PCA'yı domine eder.
+**Soru 10 (Elbow Method):** Varyans düşüşünün aniden yavaşladığı "dirsek" noktası, seçilecek ideal bileşen sayısını verir.
 
 ---
 
-## SORU 13, 14, 15, 16 (Regresyon Teorisi)
+## 11. PCA Yorumlama
+*   **(a) Negatif Skor:** PC1; yaş, hamilelik ve glikoz ile pozitif yüklü ise, yüksek negatif skor "genç, az hamilelik geçirmiş ve düşük glikozlu" kişileri temsil eder.
+*   **(b) Korelasyon:** Evet, mümkündür. PCA varyansı maksimize etmeye odaklanır, değişkenlerin kendi aralarındaki korelasyonu her zaman aynı yönde korumak zorunda değildir.
 
-**Kod (Soru 13-16):**
+---
+
+## 12. Regresyonda PCA
+*   **Avantaj:** PC'ler birbirine diktir (orthogonal), çoklu doğrusal bağlantı (multicollinearity) sorununu tamamen çözer.
+*   **Maliyet:** Klinik yorumlanabilirlik düşüktür. PC skorları bir doktor için hastayı teşhis ederken doğrudan bir anlam ifade etmez.
+
+---
+
+## 13, 14, 15 & 16. Regresyon Analizi (BMI üzerine)
+**Kod:**
 ```r
-model <- lm(bmi ~ ., data = Pima.tr)
-summary(model) # Soru 14 ve 16 için
-par(mfrow=c(2,2)); plot(model) # Soru 13 için
+model_bmi <- lm(bmi ~ . - type, data = Pima.tr)
+par(mfrow = c(2, 2)); plot(model_bmi) # Varsayım kontrolü
+summary(model_bmi)
 ```
-
-**Soru 13 (Varsayımlar):**
-*   **Homoscedasticity:** Residuals vs Fitted grafiğinde huni şekli olmamalı.
-*   **Normality:** Q-Q Plot çizgi üzerinde olmalı.
-
-**Soru 14 (P-value):**
-*   `Pr(>|t|) < 0.05` ise anlamlıdır.
-
-**Soru 16 (R-squared):**
-*   **Adjusted R2** kullanılır çünkü gereksiz değişkenler eklendiğinde düşer (Modeli cezalandırır). Multiple R2 ise hep artar, güvenilmezdir.
+*   **Soru 13 (Varsayımlar):** Residuals vs Fitted grafiğinde huni şekli varsa "Heteroscedasticity" vardır. Q-Q Plot'ta sapmalar varsa hatalar normal dağılmıyordur.
+*   **Soru 14 (Yorum):** 1 birimlik `skin` artışı, BMI'da ortalama 0.395 birimlik artış sağlar. P-value < 0.05 olduğu için anlamlıdır.
+*   **Soru 15 (Multicollinearity):** Değişkenlerin birbirleriyle aşırı ilişkili olmasıdır. Katsayıları kararsızlaştırır.
+*   **Soru 16 (Adjusted R2):** Gereksiz değişken eklenmesini cezalandırdığı için model karşılaştırmada daha güvenilirdir.
 
 ---
 
-## SORU 17, 18, 19: Stepwise ve Model Seçimi
-
-**Kod (Soru 17):**
+## 17, 18 & 19. Stepwise Regression
+**Kod:**
 ```r
-# Geriye doğru eleme (Backward Elimination)
-step(model, direction = "backward")
+step_model <- step(model_bmi, direction = "backward")
 ```
-
-**Soru 18 (Full vs Reduced):**
-*   **Cevap:** Reduced Model tercih edilir. Çünkü daha az değişkenle (basit model) neredeyse aynı başarıyı yakalar. "Parsimony Principle".
+*   **Değerlendirme:** En düşük AIC değerine sahip model seçilir.
+*   **R-squared:** Azaltılmış (reduced) modelin R2 değeri her zaman full modelden düşük veya eşittir, ancak daha basit olduğu için tercih edilebilir (Parsimony).
+*   **Eleştiri:** Stepwise sadece istatistiksel önem (AIC) bakar, klinik/teorik önemi ve uzman görüşünü dikkate almaz.
 
 ---
 
-## SORU 20, 21, 22: MICE (Eksik Veri)
-**(Teorik Sorular - Kod Gerektirmez)**
-
-**Soru 20 (m=5):**
-*   **Cevap:** "Imputing 5 different times to account for uncertainty."
-
-**Soru 21 (MNAR):**
-*   **Cevap:** MNAR (Missing Not at Random) is the most difficult. E.g., obese patients avoiding scales.
-
-**Soru 22 (Pooling):**
-*   **Cevap:** `pool()` combines results from 5 imputed datasets to correct standard errors.
+## 20, 21 & 22. MICE (Eksik Veri Atama)
+*   **m=5:** 5 farklı kopyalanmış veri seti oluşturulacağını ifade eder. Belirsizliği ölçmek için m > 1 olmalıdır.
+*   **MNAR (En Zor):** Eksikliğin verinin kendisiyle ilgili olmasıdır (örn: çok yüksek tansiyonluların ölçüm yaptırmaması). Çözümü en zordur.
+*   **pool():** Farklı veri setlerinden gelen sonuçları birleştirir ve standart hataları eksik veriden kaynaklanan belirsizliği içerecek şekilde günceller.

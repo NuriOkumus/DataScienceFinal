@@ -27,6 +27,7 @@ md.pattern(Pima_miss)
 # method='pmm' : Predictive Mean Matching (Varsayılan ve en güvenlisi)
 # maxit=5 : Her doldurma için 5 iterasyon (Hızlı olsun diye az tuttuk, default 5-10)
 imputed_data <- mice(Pima_miss, m = 5, method = 'pmm', maxit = 5, seed = 500)
+?mice
 
 # Özeti görelim
 summary(imputed_data)
